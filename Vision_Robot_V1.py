@@ -8,7 +8,7 @@ import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
 
 # Motor pins
-motor1_in1 = 16
+motor1_in1 = 17
 motor1_in2 = 18
 motor2_in1 = 22
 motor2_in2 = 23
