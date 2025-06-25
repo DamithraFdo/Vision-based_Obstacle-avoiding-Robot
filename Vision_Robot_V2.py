@@ -99,9 +99,6 @@ def detect_obstacle(frame):
     contours, _ = cv2.findContours(threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     return len(contours) > 0
 """
-if not cap.isOpened():
-    print("❌ Failed to open camera.")
-    exit() #checking the camera
 
 # Main loop
 try:
