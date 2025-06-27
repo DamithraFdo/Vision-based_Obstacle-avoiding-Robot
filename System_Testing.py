@@ -1,165 +1,102 @@
-# System Testing Script for Raspberry Pi Robot
-# This script tests the motors, camera, YOLO object detection, and OLED display of a Raspberry Pi robot.
-# It allows the user to run individual tests or a full system test.
-# Import necessary libraries
+# System Testing Script for Raspberry Pi Vision Robot
+# This script tests the motors, camera, YOLO object detection, and OLED display.
+# It provides a menu for selecting individual tests or a full system test.
+# It is designed to be run on a Raspberry Pi with the necessary hardware connected.
 
+#-------------------------------- Import Libraries --------------------------------
 import RPi.GPIO as GPIO
 import time
+import cv2
+import numpy as np
+from ultralytics import YOLO  # YOLOv8 (recommended)
 
 import board
 import busio        
 import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
-import cv2
-import numpy as np
 
-
-
-# Motor pins
+#----------------------------- Motor Setup ---------------------------------------
+# Motor control GPIO pins
 motor1_in1 = 27
 motor1_in2 = 22
 motor2_in1 = 23
 motor2_in2 = 24
 
-# Set up GPIO
+# Initialize GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(motor1_in1, GPIO.OUT)
 GPIO.setup(motor1_in2, GPIO.OUT)
 GPIO.setup(motor2_in1, GPIO.OUT)
 GPIO.setup(motor2_in2, GPIO.OUT)
 
-# Set motors to stop initially
-GPIO.output(motor1_in1, GPIO.LOW)
-GPIO.output(motor1_in2, GPIO.LOW)
-GPIO.output(motor2_in1, GPIO.LOW)
-GPIO.output(motor2_in2, GPIO.LOW)
+# Stop motors initially
+def stop_motors():
+    GPIO.output(motor1_in1, GPIO.LOW)
+    GPIO.output(motor1_in2, GPIO.LOW)
+    GPIO.output(motor2_in1, GPIO.LOW)
+    GPIO.output(motor2_in2, GPIO.LOW)
+
+stop_motors()
 
 def move_forward():
     GPIO.output(motor1_in1, GPIO.HIGH)
     GPIO.output(motor1_in2, GPIO.LOW)
     GPIO.output(motor2_in1, GPIO.HIGH)
     GPIO.output(motor2_in2, GPIO.LOW)
-    # display_status("Moving Forward")
 
 def move_backward():
     GPIO.output(motor1_in1, GPIO.LOW)
     GPIO.output(motor1_in2, GPIO.HIGH)
     GPIO.output(motor2_in1, GPIO.LOW)
     GPIO.output(motor2_in2, GPIO.HIGH)
-    # display_status("Moving Backward")
 
 def turn_left():
     GPIO.output(motor1_in1, GPIO.LOW)
     GPIO.output(motor1_in2, GPIO.HIGH)
     GPIO.output(motor2_in1, GPIO.HIGH)
     GPIO.output(motor2_in2, GPIO.LOW)
-    # display_status("Turning Left")
 
 def turn_right():
     GPIO.output(motor1_in1, GPIO.HIGH)
     GPIO.output(motor1_in2, GPIO.LOW)
     GPIO.output(motor2_in1, GPIO.LOW)
     GPIO.output(motor2_in2, GPIO.HIGH)
-    # display_status("Turning Right")
 
-def stop_motors():
-    GPIO.output(motor1_in1, GPIO.LOW)
-    GPIO.output(motor1_in2, GPIO.LOW)
-    GPIO.output(motor2_in1, GPIO.LOW)
-    GPIO.output(motor2_in2, GPIO.LOW)
-    # display_status("Stopped")
-
-
-def test_motors():
+def test_motors(duration=2):
     print("Testing motors...")
     move_forward()
-    time.sleep(2)
+    time.sleep(duration)
     stop_motors()
     time.sleep(1)
 
     move_backward()
-    time.sleep(2)
+    time.sleep(duration)
     stop_motors()
     time.sleep(1)
 
     turn_left()
-    time.sleep(2)
+    time.sleep(duration)
     stop_motors()
     time.sleep(1)
 
     turn_right()
-    time.sleep(2)
+    time.sleep(duration)
     stop_motors()
     time.sleep(1)
 
     print("Motors test complete.")
 
-#------------------------------------------- Test Camera ------------------------------------------
-
-import cv2
-
-cap = cv2.VideoCapture(0)  # Open the default camera (0) // Change to 1 if you have multiple cameras
-
-def test_camera():
-    print("Testing camera...")
-    if not cap.isOpened():
-        print("Failed to open camera.")
-        return
-    
-    for i in range(5):  # Capture 5 frames
-        ret, frame = cap.read()
-        if ret:
-            print(f"Displaying frame {i+1}")
-            cv2.imshow("Camera Test", frame)
-            cv2.waitKey(500)  # Show each frame for 500ms
-        else:
-            print("Failed to capture frame.")
-    
-    cv2.destroyAllWindows()
-    print("Camera test complete.")
-
-#---------------------------------------- Test YOLO --------------------------------------------------
-from ultralytics import YOLO
-
-model = YOLO('yolov5n.pt')
-
-def test_yolo():
-    print("Testing YOLO model...")
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to capture frame for YOLO test.")
-        return
-    
-    results = model(frame)
-    for result in results:
-        if len(result.boxes) > 0:
-            print(f"Detected {len(result.boxes)} object(s).")
-            for box in result.boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                print(f"Box coordinates: ({x1}, {y1}), ({x2}, {y2})")
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    
-    cv2.imshow("YOLO Test", frame)
-    cv2.waitKey(3000) 
-    cv2.destroyAllWindows()
-    print("YOLO test complete.")
-
-#------------------------------------ Test OLED -------------------------------------------------
-import adafruit_ssd1306
-from PIL import Image, ImageDraw, ImageFont
-import board
-import busio
-
+#----------------------------- OLED Display Setup --------------------------------
 i2c = busio.I2C(board.SCL, board.SDA)
 oled = adafruit_ssd1306.SSD1306_128x32(i2c)
-oled.fill(0)
-oled.show()
 
 def display_status(message):
-    oled.fill(0)
-    draw = ImageDraw.Draw(oled.image)
+    # Clear and write message to OLED
+    image = Image.new("1", (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
     font = ImageFont.load_default()
     draw.text((0, 0), message, font=font, fill=255)
+    oled.image = image
     oled.show()
 
 def test_oled():
@@ -172,31 +109,88 @@ def test_oled():
     oled.show()
     print("OLED test complete.")
 
-#----------------------------------- Full Test ------------------------------------------------
+#----------------------------- Camera Test --------------------------------------
+def test_camera():
+    print("Testing camera...")
+    cap = cv2.VideoCapture(0)  # Open default camera
+    if not cap.isOpened():
+        print("Failed to open camera.")
+        return
 
+    for i in range(5):
+        ret, frame = cap.read()
+        if ret:
+            print(f"Displaying frame {i+1}")
+            cv2.imshow("Camera Test", frame)
+            cv2.waitKey(500)
+        else:
+            print("Failed to capture frame.")
+
+    cap.release()
+    cv2.destroyAllWindows()
+    print("Camera test complete.")
+
+#----------------------------- YOLO Object Detection Test ------------------------
+model = YOLO('yolov8n.pt')  # Use YOLOv8 model
+
+def test_yolo():
+    print("Testing YOLO model...")
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Failed to open camera.")
+        return
+
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to capture frame for YOLO test.")
+        cap.release()
+        return
+
+    results = model(frame)
+
+    for result in results:
+        if len(result.boxes) > 0:
+            print(f"Detected {len(result.boxes)} object(s).")
+            for box in result.boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                # Optional: label
+                if result.names and box.cls is not None:
+                    label = result.names[int(box.cls[0])]
+                    cv2.putText(frame, label, (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        else:
+            print("No objects detected.")
+
+    cv2.imshow("YOLO Test", frame)
+    cv2.waitKey(3000)
+    cv2.destroyAllWindows()
+    cap.release()
+    print("YOLO test complete.")
+
+#----------------------------- Full System Test ---------------------------------
 def test_full_system():
-    print("Testing full system...")
+    print("Running full system test...")
     display_status("Full System Test")
     test_camera()
     test_yolo()
     test_motors()
     test_oled()
-    
-    display_status("System Test Complete")
+    display_status("System Test Done")
     print("Full system test complete.")
 
-#-----------------------------------------------------------------------------------------------------
-
+#----------------------------- Menu and Execution --------------------------------
 if __name__ == "__main__":
     try:
+        print("\n--- Raspberry Pi Robot Test Menu ---")
         print("1. Test Motors")
         print("2. Test Camera")
         print("3. Test YOLO")
         print("4. Test OLED")
         print("5. Test Full System")
-        
+
         choice = input("Enter your choice: ")
-        
+
         if choice == "1":
             test_motors()
         elif choice == "2":
@@ -209,11 +203,24 @@ if __name__ == "__main__":
             test_full_system()
         else:
             print("Invalid choice.")
-    
+
     except KeyboardInterrupt:
-        print("Exiting tests.")
+        print("\nInterrupted by user. Exiting...")
+
     finally:
+        # Safe shutdown
         stop_motors()
-        cap.release()
-        cv2.destroyAllWindows()
+        try:
+            cv2.destroyAllWindows()
+        except:
+            pass
         GPIO.cleanup()
+        print("GPIO cleaned up. Exiting.")
+        display_status("Goodbye!")  
+        # time.sleep(2)
+        # oled.fill(0)    
+        # oled.show()
+        # print("System shutdown complete.")      
+# End of System Testing Script
+# This script tests the motors, camera, YOLO object detection, and OLED display on a Raspberry Pi robot.
+# It provides a menu for selecting individual tests or a full system test.  
