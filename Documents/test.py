@@ -25,6 +25,7 @@ GPIO.setup(motor1_in1, GPIO.OUT)
 GPIO.setup(motor1_in2, GPIO.OUT)
 GPIO.setup(motor2_in1, GPIO.OUT)
 GPIO.setup(motor2_in2, GPIO.OUT)
+GPIO.setup(led_pin, GPIO.OUT)
 
 # Set motors to stop initially and keep the LED turned off
 GPIO.output(motor1_in1, GPIO.LOW)
@@ -46,6 +47,7 @@ def start_led_blinking():
     global led_blinking
     led_blinking = True
     thread = threading.Thread(target=led_blink_thread)
+    thread.daemon = True
     thread.start()
 
 def stop_led_blinking():
