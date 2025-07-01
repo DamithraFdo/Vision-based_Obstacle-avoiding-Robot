@@ -1,6 +1,13 @@
 #----------------------------------------- Test Motors --------------------------------------------------------------
 import RPi.GPIO as GPIO
 import time
+import threading
+import cv2
+from ultralytics import YOLO
+import adafruit_ssd1306
+from PIL import Image, ImageDraw, ImageFont
+import board
+import busio
 
 # Motor pins
 motor1_in1 = 27
@@ -83,8 +90,6 @@ def test_motors():
 
 #------------------------------------------- Test Camera ------------------------------------------
 
-import cv2
-
 cap = cv2.VideoCapture(0)
 
 def test_camera():
@@ -106,7 +111,6 @@ def test_camera():
     print("Camera test complete.")
 
 #---------------------------------------- Test YOLO --------------------------------------------------
-from ultralytics import YOLO
 
 model = YOLO('yolov5n.pt')
 
@@ -132,10 +136,6 @@ def test_yolo():
     print("YOLO test complete.")
 
 #------------------------------------ Test OLED -------------------------------------------------
-import adafruit_ssd1306
-from PIL import Image, ImageDraw, ImageFont
-import board
-import busio
 
 i2c = busio.I2C(board.SCL, board.SDA)
 oled = adafruit_ssd1306.SSD1306_128x32(i2c)
