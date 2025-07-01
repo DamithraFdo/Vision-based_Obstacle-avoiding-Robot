@@ -15,6 +15,10 @@ motor1_in2 = 22
 motor2_in1 = 23
 motor2_in2 = 24
 
+#Pins of the LED
+led_pin = 17 #Change the port if needed
+led_blinking = False
+
 # Set up GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(motor1_in1, GPIO.OUT)
@@ -22,11 +26,35 @@ GPIO.setup(motor1_in2, GPIO.OUT)
 GPIO.setup(motor2_in1, GPIO.OUT)
 GPIO.setup(motor2_in2, GPIO.OUT)
 
-# Set motors to stop initially
+# Set motors to stop initially and keep the LED turned off
 GPIO.output(motor1_in1, GPIO.LOW)
 GPIO.output(motor1_in2, GPIO.LOW)
 GPIO.output(motor2_in1, GPIO.LOW)
 GPIO.output(motor2_in2, GPIO.LOW)
+GPIO.output(led_pin, GPIO.LOW)
+
+# ------------------------------------- LED Blink Thread --------------------------------------
+
+def led_blink_thread():
+    while led_blinking:
+        GPIO.output(led_pin, GPIO.HIGH)
+        time.sleep(0.3)
+        GPIO.output(led_pin, GPIO.LOW)
+        time.sleep(0.3)
+
+def start_led_blinking():
+    global led_blinking
+    led_blinking = True
+    thread = threading.Thread(target=led_blink_thread)
+    thread.start()
+
+def stop_led_blinking():
+    global led_blinking
+    led_blinking = False
+    time.sleep(0.4)
+    GPIO.output(led_pin, GPIO.LOW)
+    
+# ------------------------------------- Motor Functions ----------------------------------------
 
 def move_forward():
     GPIO.output(motor1_in1, GPIO.HIGH)
