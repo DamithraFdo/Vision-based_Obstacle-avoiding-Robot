@@ -53,7 +53,7 @@ def stop_led_blinking():
     led_blinking = False
     time.sleep(0.4)
     GPIO.output(led_pin, GPIO.LOW)
-    
+
 # ------------------------------------- Motor Functions ----------------------------------------
 
 def move_forward():
@@ -197,6 +197,7 @@ def test_full_system():
     test_motors()
     test_oled()
     
+    stop_led_blinking()
     display_status("System Test Complete")
     print("Full system test complete.")
 
@@ -228,6 +229,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Exiting tests.")
     finally:
+        stop_led_blinking()
         stop_motors()
         cap.release()
         cv2.destroyAllWindows()
