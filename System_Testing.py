@@ -9,11 +9,37 @@ import time
 import cv2
 import numpy as np
 from ultralytics import YOLO  # YOLOv8 (recommended)
-
+import threading
 import board
 import busio        
 import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
+
+#------------------------- LED ----------------------------------
+
+#Pins of the LED
+led_pin = 17 #Change the port if needed
+led_blinking = False
+
+def led_blink_thread():
+    while led_blinking:
+        GPIO.output(led_pin, GPIO.HIGH)
+        time.sleep(0.3)
+        GPIO.output(led_pin, GPIO.LOW)
+        time.sleep(0.3)
+
+def start_led_blinking():
+    global led_blinking
+    led_blinking = True
+    thread = threading.Thread(target=led_blink_thread)
+    thread.daemon = True
+    thread.start()
+
+def stop_led_blinking():
+    global led_blinking
+    led_blinking = False
+    time.sleep(0.4)
+    GPIO.output(led_pin, GPIO.LOW)
 
 #----------------------------- Motor Setup ---------------------------------------
 # Motor control GPIO pins
@@ -181,6 +207,7 @@ def test_full_system():
 
 #----------------------------- Menu and Execution --------------------------------
 if __name__ == "__main__":
+    start_led_blinking()
     try:
         print("\n--- Raspberry Pi Robot Test Menu ---")
         print("1. Test Motors")
@@ -217,6 +244,7 @@ if __name__ == "__main__":
         GPIO.cleanup()
         print("GPIO cleaned up. Exiting.")
         display_status("Goodbye!")  
+        stop_led_blinking()
         # time.sleep(2)
         # oled.fill(0)    
         # oled.show()
