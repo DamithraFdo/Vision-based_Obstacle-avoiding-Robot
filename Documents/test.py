@@ -1,6 +1,13 @@
 #----------------------------------------- Test Motors --------------------------------------------------------------
 import RPi.GPIO as GPIO
 import time
+import threading
+import cv2
+from ultralytics import YOLO
+import adafruit_ssd1306
+from PIL import Image, ImageDraw, ImageFont
+import board
+import busio
 
 # Motor pins
 motor1_in1 = 27
@@ -8,18 +15,48 @@ motor1_in2 = 22
 motor2_in1 = 23
 motor2_in2 = 24
 
+#Pins of the LED
+led_pin = 17 #Change the port if needed
+led_blinking = False
+
 # Set up GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(motor1_in1, GPIO.OUT)
 GPIO.setup(motor1_in2, GPIO.OUT)
 GPIO.setup(motor2_in1, GPIO.OUT)
 GPIO.setup(motor2_in2, GPIO.OUT)
+GPIO.setup(led_pin, GPIO.OUT)
 
-# Set motors to stop initially
+# Set motors to stop initially and keep the LED turned off
 GPIO.output(motor1_in1, GPIO.LOW)
 GPIO.output(motor1_in2, GPIO.LOW)
 GPIO.output(motor2_in1, GPIO.LOW)
 GPIO.output(motor2_in2, GPIO.LOW)
+GPIO.output(led_pin, GPIO.LOW)
+
+# ------------------------------------- LED Blink Thread --------------------------------------
+
+def led_blink_thread():
+    while led_blinking:
+        GPIO.output(led_pin, GPIO.HIGH)
+        time.sleep(0.3)
+        GPIO.output(led_pin, GPIO.LOW)
+        time.sleep(0.3)
+
+def start_led_blinking():
+    global led_blinking
+    led_blinking = True
+    thread = threading.Thread(target=led_blink_thread)
+    thread.daemon = True
+    thread.start()
+
+def stop_led_blinking():
+    global led_blinking
+    led_blinking = False
+    time.sleep(0.4)
+    GPIO.output(led_pin, GPIO.LOW)
+
+# ------------------------------------- Motor Functions ----------------------------------------
 
 def move_forward():
     GPIO.output(motor1_in1, GPIO.HIGH)
@@ -83,8 +120,6 @@ def test_motors():
 
 #------------------------------------------- Test Camera ------------------------------------------
 
-import cv2
-
 cap = cv2.VideoCapture(0)
 
 def test_camera():
@@ -106,7 +141,6 @@ def test_camera():
     print("Camera test complete.")
 
 #---------------------------------------- Test YOLO --------------------------------------------------
-from ultralytics import YOLO
 
 model = YOLO('yolov5n.pt')
 
@@ -132,10 +166,6 @@ def test_yolo():
     print("YOLO test complete.")
 
 #------------------------------------ Test OLED -------------------------------------------------
-import adafruit_ssd1306
-from PIL import Image, ImageDraw, ImageFont
-import board
-import busio
 
 i2c = busio.I2C(board.SCL, board.SDA)
 oled = adafruit_ssd1306.SSD1306_128x32(i2c)
@@ -169,6 +199,7 @@ def test_full_system():
     test_motors()
     test_oled()
     
+    stop_led_blinking()
     display_status("System Test Complete")
     print("Full system test complete.")
 
@@ -200,6 +231,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Exiting tests.")
     finally:
+        stop_led_blinking()
         stop_motors()
         cap.release()
         cv2.destroyAllWindows()
