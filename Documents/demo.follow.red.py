@@ -5,16 +5,19 @@ import time
 
 def stop():
     print('stop')
+    time.sleep(0.5)  # simulate stop action delay
 
 def forward():
     print('forward')
+    time.sleep(0.5)  # simulate forward action delay
 
 def left():
     print('left')
+    time.sleep(0.5)  # simulate left action delay
 
 def right():
     print('right')
-
+    time.sleep(0.5)  # simulate right action delay
 
 def detect_red_object(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
